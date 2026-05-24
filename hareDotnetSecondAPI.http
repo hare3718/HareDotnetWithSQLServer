@@ -1,0 +1,6 @@
+@hareDotnetSecondAPI_HostAddress = http://localhost:5223
+
+GET {{hareDotnetSecondAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
