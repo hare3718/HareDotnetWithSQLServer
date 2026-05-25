@@ -8,11 +8,11 @@ namespace hareDotnetSecondAPI.Controllers;
 [ApiController]
 [Route("[controller]")]
 
-public class UserController : ControllerBase
+public class UserDapperController : ControllerBase
 {
     DataContextDapper _dataContextDapper;
 
-    public UserController(IConfiguration configuration)
+    public UserDapperController(IConfiguration configuration)
     {
         _dataContextDapper = new DataContextDapper(configuration);
     }
@@ -66,6 +66,15 @@ FROM HareDotnetFirstSchema.Users where UserId = " + userId.ToString();
                        VALUES ('{user.FirstName}', '{user.LastName}', '{user.Email}', '{user.Gender}', {(user.Active ? 1 : 0)})";
         if (_dataContextDapper.ExecuteAddSql(sql) > 0) return Ok();
         throw new Exception("Sorry Hare bro, Something went wrong while adding the user");
+    }
+
+    [HttpDelete("DeleteUser/{userId}")]
+
+    public IActionResult DeleteUser(int userId)
+    {
+        string sql = @"DELETE FROM HareDotnetFirstSchema.Users WHERE UserId = " + userId.ToString();
+        if (_dataContextDapper.ExecuteSql(sql)) return Ok();
+        throw new Exception("Sorry Hare bro, Something went wrong while deleting the user");
     }
 
 }
