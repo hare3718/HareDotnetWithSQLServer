@@ -1,3 +1,6 @@
+using hareDotnetSecondAPI.Data;
+
+
 var builder = WebApplication.CreateBuilder(args); // build the sever that API will be running
 builder.Services.AddControllers();
 
@@ -24,9 +27,10 @@ builder.Services.AddCors((options) =>
                     .AllowCredentials();
             });
     });
- 
+builder.Services.AddScoped<DataContextDapper>();
+
 var app = builder.Build();
- 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

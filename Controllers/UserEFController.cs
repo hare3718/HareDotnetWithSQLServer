@@ -80,4 +80,14 @@ public class UserEFController : ControllerBase
         throw new Exception("Sorry Hare bro, User not found");
     }
 
+    // New endpoints for UserSalary and UserJobInfo
+
+    [HttpGet("GetUsersJobInfo")]
+    public IEnumerable<UserJobInfo> GetUsersJobInfo()
+    {
+       IEnumerable<UserJobInfo> users = _dataContextEF.UserJobInfo.ToList<UserJobInfo>();
+       if (users == null) throw new Exception("Sorry Hare bro, Something went wrong while fetching the users");
+        return users;
+    }
+
 }
