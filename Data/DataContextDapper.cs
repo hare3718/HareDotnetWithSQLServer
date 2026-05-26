@@ -22,7 +22,7 @@ public class DataContextDapper
     public T LoadDataSingle<T>(string sql)
     {
         IDbConnection dbConnection = CreateConnection();
-        return dbConnection.QuerySingle<T>(sql);
+        return dbConnection.QuerySingleOrDefault<T>(sql);
     }
 
     public IDbConnection CreateConnection()
@@ -40,5 +40,21 @@ public class DataContextDapper
     {
         IDbConnection dbConnection = CreateConnection();
         return dbConnection.Execute(sql);
+    }
+
+    public bool ExecuteSqlWithParameters(string sql, List<SqlParameter> parameters)
+    {
+        SqlCommand commandWithParams = new SqlCommand(sql);
+        foreach (SqlParameter param in parameters)
+        {
+            commandWithParams.Parameters.Add(param);
+        }
+
+        SqlConnection sqlConnection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+        commandWithParams.Connection = sqlConnection;
+        sqlConnection.Open();
+        int rowsAffected = commandWithParams.ExecuteNonQuery();
+        sqlConnection.Close();
+        return rowsAffected > 0;
     }
 }

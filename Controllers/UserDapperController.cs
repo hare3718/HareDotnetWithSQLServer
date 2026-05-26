@@ -55,7 +55,7 @@ FROM HareDotnetFirstSchema.Users where UserId = " + userId.ToString();
              Active = {(user.Active ? 1 : 0)}
         //  WHERE UserId = {user.UserId}";
         //  Console.WriteLine(sql);
-       if (_dataContextDapper.ExecuteSql(sql)) return Ok();
+        if (_dataContextDapper.ExecuteSql(sql)) return Ok();
         throw new Exception("Sorry Hare bro, Something went wrong while updating the user");
     }
 
@@ -75,6 +75,20 @@ FROM HareDotnetFirstSchema.Users where UserId = " + userId.ToString();
         string sql = @"DELETE FROM HareDotnetFirstSchema.Users WHERE UserId = " + userId.ToString();
         if (_dataContextDapper.ExecuteSql(sql)) return Ok();
         throw new Exception("Sorry Hare bro, Something went wrong while deleting the user");
+    }
+
+    // New endpoints for UserSalary and UserJobInfo
+
+    [HttpGet("GetUsersJobInfo")]
+    public IEnumerable<UserJobInfo> GetUsersJobInfo()
+    {
+        string sql = @"SELECT 
+       [UserId],
+       [JobTitle],
+       [Department]
+FROM HareDotnetFirstSchema.UserJobInfo";
+        IEnumerable<UserJobInfo> users = _dataContextDapper.LoadData<UserJobInfo>(sql);
+        return users;
     }
 
 }
