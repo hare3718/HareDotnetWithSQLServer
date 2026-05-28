@@ -1,5 +1,7 @@
 using hareDotnetSecondAPI.Data;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args); // build the sever that API will be running
 builder.Services.AddControllers();
@@ -29,6 +31,22 @@ builder.Services.AddCors((options) =>
     });
 builder.Services.AddScoped<DataContextDapper>();
 
+SymmetricSecurityKey tokenKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("AppSettings:TokenKey").Value));
+
+TokenValidationParameters tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = false,
+    ValidateAudience = false,
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = tokenKey
+};
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = tokenValidationParameters;
+    });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -44,6 +62,7 @@ else
     app.UseHttpsRedirection();
 }
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
