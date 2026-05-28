@@ -6,19 +6,32 @@ using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Text;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
+using hareDotnetSecondAPI.Helpers;
 
 
 namespace hareDotnetSecondAPI.Controllers
 {
+    [Authorize]
+    [ApiController]
+    [Route("[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly DataContextDapper _dataContextDapper;
         private readonly IConfiguration _config;
+
+        private readonly AuthHelper _authHelper;
         public AuthController(IConfiguration config, DataContextDapper dataContextDapper)
         {
             _dataContextDapper = new DataContextDapper(config);
             _config = config;
+            _authHelper = new AuthHelper(config);
         }
+
+        [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
@@ -34,7 +47,7 @@ namespace hareDotnetSecondAPI.Controllers
                         rng.GetNonZeroBytes(passwordSalt);
                     }
 
-                    byte[] passwordHash = GetPasswordHash(userForRegistration.Password, passwordSalt);
+                    byte[] passwordHash = _authHelper.GetPasswordHash(userForRegistration.Password, passwordSalt);
                     string addAuth = @"INSERT INTO HareDotnetFirstSchema.Auth (Email, PasswordHash, PasswordSalt) VALUES
                      (@Email, @PasswordHash, @PasswordSalt)";
 
@@ -70,6 +83,7 @@ namespace hareDotnetSecondAPI.Controllers
             return BadRequest("Password and Password Confirmation do not match");
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
@@ -79,26 +93,25 @@ namespace hareDotnetSecondAPI.Controllers
             if (userForLoginConfirmation == null)
                 return StatusCode(404, "User not found!");
 
-            byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForLoginConfirmation.PasswordSalt);
+            byte[] passwordHash = _authHelper.GetPasswordHash(userForLogin.Password, userForLoginConfirmation.PasswordSalt);
 
             if (passwordHash.SequenceEqual(userForLoginConfirmation.PasswordHash))
             {
-                return Ok(userForLogin);
+                int userId = _dataContextDapper.LoadDataSingle<int>(@"SELECT UserId FROM HareDotnetFirstSchema.Users where Email = '" + userForLogin.Email + "'");
+                return Ok(new Dictionary<string, string> { { "token", _authHelper.CreateToken(userId.ToString()) } });
             }
             return Unauthorized("Password is incorrect!. Please try again.");
         }
 
-        private byte[] GetPasswordHash(string password, byte[] passwordSalt)
+        [HttpGet("RefreshToken")]
+        public IActionResult RefreshToken()
         {
-            string passwordSaltPlusString = _config.GetSection("AppSettings:PasswordKey").Value + Convert.ToBase64String(passwordSalt);
+            // Logic to refresh the token
+            string userId = User.FindFirst("UserId")?.Value + "";
 
-            return KeyDerivation.Pbkdf2(
-                password: password,
-                salt: Encoding.UTF8.GetBytes(passwordSaltPlusString),
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 100000,
-                numBytesRequested: 256 / 8
-            );
+            string sql = @"SELECT UserId FROM HareDotnetFirstSchema.Users where UserId = " + userId;
+            int userIdFromDb = _dataContextDapper.LoadDataSingle<int>(sql);
+            return Ok(new Dictionary<string, string> { { "token", _authHelper.CreateToken(userIdFromDb.ToString()) } });
         }
     }
 }
